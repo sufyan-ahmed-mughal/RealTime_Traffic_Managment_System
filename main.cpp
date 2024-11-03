@@ -29,14 +29,16 @@ public:
 class RoadNetwork
 {
 public:
-    int numIntersections;
+    int numIntersections;         // Variable for Total number of Intersections in the Road
     vector<vector<Road>> adjList; // Adjacency list for roads
 
+    // Constructor
     RoadNetwork(int numIntersections) : numIntersections(numIntersections)
     {
         adjList.resize(numIntersections);
     }
 
+    // Destructor
     ~RoadNetwork()
     {
     }
@@ -48,6 +50,29 @@ public:
         adjList[from].push_back(road);
         adjList[to].push_back(Road(roadId, to, from, length, capacity));
     }
+
+    // Function for Displaying the Road
+    void displayNetwork()
+    {
+        cout << "\n--- Traffic Network Status ---\n";
+        for (int i = 0; i < numIntersections; i++)
+        {
+            // Variable for Checking Road in the Network
+            bool hasRoad = !adjList[i].empty();
+
+            if (hasRoad)
+            {
+                cout << "Intersection " << i;
+                for (auto &road : adjList[i])
+                {
+                    cout << "  Road " << road.id << " to intersection " << road.end
+                         << " | Length: " << road.length
+                         << "m | Capacity: " << road.capacity
+                         << " cars | Current cars: " << road.currentCars << "\n";
+                }
+            }
+        }
+    }
 };
 
 // M E N U
@@ -55,6 +80,7 @@ void showMenu()
 {
     cout << "\n--- Traffic Management Menu ---\n";
     cout << "1. Add Road\n";
+    cout << "2. Display Road Network\n";
     cout << "Choose an option: ";
 }
 
@@ -75,6 +101,7 @@ int main()
         switch (choice)
         {
         case 1:
+        {
             int roadId, from, to, length, capacity;
             cout << "Enter road ID: ";
             cin >> roadId;
@@ -89,6 +116,12 @@ int main()
             network.addRoad(roadId, from, to, length, capacity);
             cout << "Road added successfully.\n";
             break;
+        }
+        case 2:
+        {
+            network.displayNetwork();
+            break;
+        }
         default:
             cout << "Invalid option. Please try again.\n";
         }
