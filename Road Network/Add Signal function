@@ -1,0 +1,12 @@
+void addSignal(int intersectionId)
+    {
+        if (intersectionId >= 0 && intersectionId < numIntersections)
+        {
+            intersections[intersectionId].hasSignal = true;
+            intersections[intersectionId].signalState = "Red";
+        }
+        else
+        {
+            cout << "Invalid intersection ID.\n";
+        }
+    }
