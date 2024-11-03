@@ -62,10 +62,10 @@ public:
 
             if (hasRoad)
             {
-                cout << "Intersection " << i;
+                cout << "Intersection " << i<<"\n";
                 for (auto &road : adjList[i])
                 {
-                    cout << "  Road " << road.id << " to intersection " << road.end
+                    cout << "  Road " << road.id << " :J intersection " << road.end
                          << " | Length: " << road.length
                          << "m | Capacity: " << road.capacity
                          << " cars | Current cars: " << road.currentCars << "\n";
