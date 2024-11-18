@@ -96,6 +96,7 @@ void showMenu()
     cout << "\n--- Traffic Management Menu ---\n";
     cout << "1. Add Road\n";
     cout << "2. Display Road Network\n";
+    cout << "3. Add Cars to Road\n";
     cout << "Choose an option: ";
 }
 
