@@ -87,7 +87,19 @@ public:
             }
         }
     }
-
+void removeCarsFromRoad(int from, int to, int cars)
+    {
+        for (auto &road : adjList[from])
+        {
+            if (road.end == to && road.currentCars >= cars)
+            {
+                road.currentCars -= cars;
+                cout << cars << " cars removed from road " << road.id << ".\n";
+                return;
+            }
+        }
+        cout << "Unable to remove cars. Road does not exist or not enough cars.\n";
+    }
 };
 
 // M E N U
@@ -97,6 +109,7 @@ void showMenu()
     cout << "1. Add Road\n";
     cout << "2. Display Road Network\n";
     cout << "3. Add Cars to Road\n";
+    cout << "4. Remove Cars from Road\n";
     cout << "Choose an option: ";
 }
 
@@ -146,14 +159,27 @@ int main()
             cin >> from;
             cout << "Enter end intersection: ";
             cin >> to;
-            cout << "Enter road length: ";
+            cout << "Enter cars you want to add: ";
             cin >> cars;
             network.addCarsToRoad(from, to, cars);
             break;
+        }
+        case 4:
+        {
+            int from,to,cars;
+            cout << "Enter start intersection: ";
+            cin >> from;
+            cout << "Enter end intersection: ";
+            cin >> to;
+            cout << "Enter Cars you want to Remove: ";
+            cin >> cars;
+            network.removeCarsFromRoad(from, to, cars);
+            break;
+        }
         default:
             cout << "Invalid option. Please try again.\n";
+            break;
         }
     }
-
     return 0;
 }
