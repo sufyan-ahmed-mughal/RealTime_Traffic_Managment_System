@@ -73,6 +73,21 @@ public:
             }
         }
     }
+
+    // Function for Add Cars to Road
+    void addCarsToRoad(int from, int to, int cars)
+    {
+        for (auto &road : adjList[from])
+        {
+            if (road.end == to && road.currentCars + cars <= road.capacity)
+            {
+                road.currentCars += cars;
+                cout << cars << " cars added to road " << road.id << ".\n";
+                return;
+            }
+        }
+        cout << "Unable to add cars. Road does not exist or capacity exceeded.\n";
+    }
 };
 
 // M E N U
@@ -81,6 +96,7 @@ void showMenu()
     cout << "\n--- Traffic Management Menu ---\n";
     cout << "1. Add Road\n";
     cout << "2. Display Road Network\n";
+    cout << "3. Add Cars to Road\n";
     cout << "Choose an option: ";
 }
 
@@ -120,6 +136,18 @@ int main()
         case 2:
         {
             network.displayNetwork();
+            break;
+        }
+        case 3:
+        {
+            int cars, from, to;
+            cout << "Enter Cars you want to Add: ";
+            cin >> cars;
+            cout << "Enter start intersection: ";
+            cin >> from;
+            cout << "Enter end intersection: ";
+            cin >> to;
+            network.addCarsToRoad(from, to, cars);
             break;
         }
         default:
