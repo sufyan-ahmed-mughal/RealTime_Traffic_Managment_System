@@ -50,6 +50,20 @@ public:
         adjList[from].push_back(road);
         adjList[to].push_back(Road(roadId, to, from, length, capacity));
     }
+    //Add cars to road
+    void addCarsToRoad(int from, int to, int cars)
+    {
+        for (auto &road : adjList[from])
+        {
+            if (road.end == to && road.currentCars + cars <= road.capacity)
+            {
+                road.currentCars += cars;
+                cout << cars << " cars added to road " << road.id << ".\n";
+                return;
+            }
+        }
+        cout << "Unable to add cars. Road does not exist or capacity exceeded.\n";
+    }
 
     // Function for Displaying the Road
     void displayNetwork()
@@ -99,6 +113,7 @@ void showMenu()
     cout << "3. Add Cars to Road\n";
     cout << "Choose an option: ";
 }
+
 
 int main()
 {
