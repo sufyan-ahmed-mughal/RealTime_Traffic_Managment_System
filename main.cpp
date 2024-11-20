@@ -87,6 +87,7 @@ public:
             }
         }
     }
+<<<<<<< HEAD
 void removeCarsFromRoad(int from, int to, int cars)
     {
         for (auto &road : adjList[from])
@@ -99,6 +100,22 @@ void removeCarsFromRoad(int from, int to, int cars)
             }
         }
         cout << "Unable to remove cars. Road does not exist or not enough cars.\n";
+=======
+
+    // Function for Add Cars to Road
+    void addCarsToRoad(int from, int to, int cars)
+    {
+        for (auto &road : adjList[from])
+        {
+            if (road.end == to && road.currentCars + cars <= road.capacity)
+            {
+                road.currentCars += cars;
+                cout << cars << " cars added to road " << road.id << ".\n";
+                return;
+            }
+        }
+        cout << "Unable to add cars. Road does not exist or capacity exceeded.\n";
+>>>>>>> 30f56648f4a671406df3d72c225a13fcc73b34bf
     }
 };
 
@@ -154,11 +171,14 @@ int main()
         }
         case 3:
         {
-            int from,to,cars;
+            int cars, from, to;
+            cout << "Enter Cars you want to Add: ";
+            cin >> cars;
             cout << "Enter start intersection: ";
             cin >> from;
             cout << "Enter end intersection: ";
             cin >> to;
+<<<<<<< HEAD
             cout << "Enter cars you want to add: ";
             cin >> cars;
             network.addCarsToRoad(from, to, cars);
@@ -176,6 +196,11 @@ int main()
             network.removeCarsFromRoad(from, to, cars);
             break;
         }
+=======
+            network.addCarsToRoad(from, to, cars);
+            break;
+        }
+>>>>>>> 30f56648f4a671406df3d72c225a13fcc73b34bf
         default:
             cout << "Invalid option. Please try again.\n";
             break;
