@@ -9,17 +9,6 @@
 
 using namespace std;
 
-struct Node
-{
-    int id;
-    int distance;
-
-    bool operator>(const Node &other) const
-    {
-        return distance > other.distance;
-    }
-};
-
 // Function to validate integer input
 int getValidatedInt(const string &prompt)
 {
