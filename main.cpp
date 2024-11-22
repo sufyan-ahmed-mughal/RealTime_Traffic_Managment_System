@@ -15,15 +15,22 @@ public:
 };
 
 // I N T E R S E C T I O N - C L A S S
-class Signal_Intersection {
+class Signal_Intersection
+{
 public:
     int id;
     bool hasSignal;
     string signalState;
 
-    Signal_Intersection(int id = 0) : id(id), hasSignal(false), signalState("Red") {}
+    Signal_Intersection(int id = 0)
+    {
+        this->id = id;
+        this->hasSignal = false;
+        this->signalState = "Red";
+    }
 
-    void toggleSignal() {
+    void toggleSignal()
+    {
         signalState = (signalState == "Red") ? "Green" : "Red";
     }
 };
@@ -86,16 +93,22 @@ public:
         cout << "Unable to remove cars. Road does not exist or not enough cars.\n";
     }
 
-    void addSignal(int from, int to) {
-        for (auto &road : adjList[from]) {
-            if (road.end == to) {
-                road.signalState = "Red";
-                intersections[from].hasSignal = true;
+    void addSignal(int from, int to){
+        bool found = false;
+        for (auto &road : adjList[from])
+        {
+            if (road.end == to)
+            {
+                road.signalState = "Red"; // Initialize signal state on this road
+                found = true;
+                intersections[from].hasSignal = true; // Marking the intersection as having a signal
                 cout << "Signal added on road from " << from << " to " << to << ".\n";
-                return;
             }
         }
-        cout << "No road found from " << from << " to " << to << ".\n";
+        if (!found)
+        {
+            cout << "No road found from " << from << " to " << to << ".\n";
+        }
     }
 
     void displayNetwork() {
