@@ -29,7 +29,7 @@ public:
 class RoadNetwork
 {
 public:
-    int numIntersections;         // Variable for Total number of Intersections in the Road
+    int numIntersections;         // Total number of intersections in the road network
     vector<vector<Road>> adjList; // Adjacency list for roads
 
     // Constructor
@@ -43,14 +43,15 @@ public:
     {
     }
 
-    // Function for Adding Road
+    // Function to add a road
     void addRoad(int roadId, int from, int to, int length, int capacity)
     {
         Road road(roadId, from, to, length, capacity);
         adjList[from].push_back(road);
         adjList[to].push_back(Road(roadId, to, from, length, capacity));
     }
-    //Add cars to road
+
+    // Function to add cars to a road
     void addCarsToRoad(int from, int to, int cars)
     {
         for (auto &road : adjList[from])
@@ -65,30 +66,8 @@ public:
         cout << "Unable to add cars. Road does not exist or capacity exceeded.\n";
     }
 
-    // Function for Displaying the Road
-    void displayNetwork()
-    {
-        cout << "\n--- Traffic Network Status ---\n";
-        for (int i = 0; i < numIntersections; i++)
-        {
-            // Variable for Checking Road in the Network
-            bool hasRoad = !adjList[i].empty();
-
-            if (hasRoad)
-            {
-                cout << "Intersection " << i<<"\n";
-                for (auto &road : adjList[i])
-                {
-                    cout << "  Road " << road.id << " :J intersection " << road.end
-                         << " | Length: " << road.length
-                         << "m | Capacity: " << road.capacity
-                         << " cars | Current cars: " << road.currentCars << "\n";
-                }
-            }
-        }
-    }
-<<<<<<< HEAD
-void removeCarsFromRoad(int from, int to, int cars)
+    // Function to remove cars from a road
+    void removeCarsFromRoad(int from, int to, int cars)
     {
         for (auto &road : adjList[from])
         {
@@ -100,22 +79,26 @@ void removeCarsFromRoad(int from, int to, int cars)
             }
         }
         cout << "Unable to remove cars. Road does not exist or not enough cars.\n";
-=======
+    }
 
-    // Function for Add Cars to Road
-    void addCarsToRoad(int from, int to, int cars)
+    // Function to display the road network
+    void displayNetwork()
     {
-        for (auto &road : adjList[from])
+        cout << "\n--- Traffic Network Status ---\n";
+        for (int i = 0; i < numIntersections; i++)
         {
-            if (road.end == to && road.currentCars + cars <= road.capacity)
+            if (!adjList[i].empty())
             {
-                road.currentCars += cars;
-                cout << cars << " cars added to road " << road.id << ".\n";
-                return;
+                cout << "Intersection " << i << "\n";
+                for (auto &road : adjList[i])
+                {
+                    cout << "  Road " << road.id << " to intersection " << road.end
+                         << " | Length: " << road.length
+                         << "m | Capacity: " << road.capacity
+                         << " cars | Current cars: " << road.currentCars << "\n";
+                }
             }
         }
-        cout << "Unable to add cars. Road does not exist or capacity exceeded.\n";
->>>>>>> 30f56648f4a671406df3d72c225a13fcc73b34bf
     }
 };
 
@@ -130,7 +113,6 @@ void showMenu()
     cout << "Choose an option: ";
 }
 
-
 int main()
 {
     int numIntersections;
@@ -138,11 +120,11 @@ int main()
     cin >> numIntersections;
     RoadNetwork network(numIntersections); // Initialize network with number of intersections
 
-    int choice; // Variable for getting user choice
+    int choice;
 
     while (true)
     {
-        showMenu(); // Call the menu function
+        showMenu();
         cin >> choice;
 
         switch (choice)
@@ -172,13 +154,10 @@ int main()
         case 3:
         {
             int cars, from, to;
-            cout << "Enter Cars you want to Add: ";
-            cin >> cars;
             cout << "Enter start intersection: ";
             cin >> from;
             cout << "Enter end intersection: ";
             cin >> to;
-<<<<<<< HEAD
             cout << "Enter cars you want to add: ";
             cin >> cars;
             network.addCarsToRoad(from, to, cars);
@@ -186,21 +165,16 @@ int main()
         }
         case 4:
         {
-            int from,to,cars;
+            int from, to, cars;
             cout << "Enter start intersection: ";
             cin >> from;
             cout << "Enter end intersection: ";
             cin >> to;
-            cout << "Enter Cars you want to Remove: ";
+            cout << "Enter cars you want to remove: ";
             cin >> cars;
             network.removeCarsFromRoad(from, to, cars);
             break;
         }
-=======
-            network.addCarsToRoad(from, to, cars);
-            break;
-        }
->>>>>>> 30f56648f4a671406df3d72c225a13fcc73b34bf
         default:
             cout << "Invalid option. Please try again.\n";
             break;
