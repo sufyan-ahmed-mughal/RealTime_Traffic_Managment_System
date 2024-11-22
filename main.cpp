@@ -67,6 +67,26 @@ public:
         adjList[from].push_back(road);
         adjList[to].push_back(Road(roadId, to, from, length, capacity)); // Bidirectional
     }
+        void toggleSignal(int intersectionId)
+    {
+        if (intersectionId >= 0 && intersectionId < numIntersections)
+        {
+            if (intersections[intersectionId].hasSignal)
+            {
+                intersections[intersectionId].toggleSignal();
+                cout << "Signal at Intersection " << intersectionId << " toggled manually to "
+                     << intersections[intersectionId].signalState << ".\n";
+            }
+            else
+            {
+                cout << "No signal installed at Intersection " << intersectionId << ".\n";
+            }
+        }
+        else
+        {
+            cout << "Invalid intersection ID.\n";
+        }
+    }
 
     // Function to add cars to a road
     void addCarsToRoad(int from, int to, int cars) {
@@ -134,6 +154,7 @@ void showMenu() {
     cout << "3. Add Cars to Road\n";
     cout << "4. Remove Cars from Road\n";
     cout << "5. Add Signal\n";
+    cout << "6. Toggle Signal\n";
     cout << "Choose an option: ";
 }
 
@@ -199,6 +220,14 @@ int main() {
             cout << "Enter end intersection: ";
             cin >> toID;
             network.addSignal(fromID, toID);
+            break;
+        }
+        case 6:
+        {
+            int intersectionId ;
+            cout<<"Enter intersection ID to toggle the signal: ";
+            cin>>intersectionId;
+            network.toggleSignal(intersectionId);
             break;
         }
         default:
