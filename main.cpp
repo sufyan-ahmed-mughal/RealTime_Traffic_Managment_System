@@ -1,21 +1,47 @@
 #include <iostream>
 #include <vector>
-#include <string>
+#include <thread>
+#include <chrono>
+#include <queue>
+#include <Windows.h> // For Sleep function on Windows
+#include <limits>
+#include <algorithm>
 
 using namespace std;
 
-// R O A D - C L A S S
-class Road
+struct Node
 {
-public:
-    int id, start, end, length, capacity, currentCars;
-    string signalState;
+    int id;
+    int distance;
 
-    Road(int id = -1, int start = -1, int end = -1, int length = 0, int capacity = 0)
-        : id(id), start(start), end(end), length(length), capacity(capacity), currentCars(0), signalState("None") {}
+    bool operator>(const Node &other) const
+    {
+        return distance > other.distance;
+    }
 };
 
-// I N T E R S E C T I O N - C L A S S
+// Function to validate integer input
+int getValidatedInt(const string &prompt)
+{
+    int value;
+    while (true)
+    {
+        cout << prompt;
+        cin >> value;
+        if (cin.fail() || value < 0)
+        {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a non-negative integer.\n";
+        }
+        else
+        {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return value;
+        }
+    }
+}
+
 class Signal_Intersection
 {
 public:
@@ -36,7 +62,21 @@ public:
     }
 };
 
-// M A I N - C L A S S
+class Road
+{
+public:
+    int id;
+    int start;
+    int end;
+    int length;
+    int capacity;
+    int currentCars;
+    string signalState; // Added to track signal state on individual roads
+
+    Road(int id = -1, int start = -1, int end = -1, int length = 0, int capacity = 0)
+        : id(id), start(start), end(end), length(length), capacity(capacity), currentCars(0), signalState("Red") {}
+};
+
 class RoadNetwork
 {
 public:
@@ -44,22 +84,111 @@ public:
     vector<Signal_Intersection> intersections;
     vector<vector<Road>> adjList;
     vector<bool> automaticSignals;
+    thread signalThread;
+    bool running;
 
-    RoadNetwork(int numIntersections) : numIntersections(numIntersections)
+    RoadNetwork(int numIntersections) : numIntersections(numIntersections), running(true)
     {
-        adjList.resize(numIntersections);
         intersections.resize(numIntersections);
+        adjList.resize(numIntersections);
         automaticSignals.resize(numIntersections, false);
-        for (int i = 0; i < numIntersections; i++)
+        for (int i = 0; i < numIntersections; ++i)
         {
             intersections[i] = Signal_Intersection(i);
+        }
+        signalThread = thread(&RoadNetwork::manageSignals, this);
+    }
+
+    ~RoadNetwork()
+    {
+        running = false;
+        if (signalThread.joinable())
+        {
+            signalThread.join();
+        }
+    }
+
+    void addSignal(int from, int to){
+        bool found = false;
+        for (auto &road : adjList[from])
+        {
+            if (road.end == to)
+            {
+                road.signalState = "Red"; // Initialize signal state on this road
+                found = true;
+                intersections[from].hasSignal = true; // Marking the intersection as having a signal
+                cout << "Signal added on road from " << from << " to " << to << ".\n";
+            }
+        }
+        if (!found)
+        {
+            cout << "No road found from " << from << " to " << to << ".\n";
+        }
+    }
+
+    void adjustSignalBasedOnTraffic(int intersectionId){
+        int totalCars = 0;
+        for (const Road &road : adjList[intersectionId])
+        {
+            totalCars += road.currentCars;
+        }
+
+        // Calculate traffic density as a percentage of capacity
+        double density = (totalCars > 0) ? static_cast<double>(totalCars) / adjList[intersectionId].front().capacity : 0;
+
+        // Adjust signal timing based on traffic density
+        if (density > 0.75)
+        {
+            intersections[intersectionId].signalState = "Green";
+        }
+        else if (density > 0.50)
+        {
+            intersections[intersectionId].signalState = "Yellow";
+        }
+        else
+        {
+            intersections[intersectionId].signalState = "Red";
+        }
+    }
+
+    void manageSignals(){
+        while (running)
+        {
+            for (int i = 0; i < numIntersections; ++i)
+            {
+                if (automaticSignals[i] && intersections[i].hasSignal)
+                {
+                    adjustSignalBasedOnTraffic(i);
+                }
+            }
+            Sleep(5000);
         }
     }
 
     void addRoad(int roadId, int from, int to, int length, int capacity)
     {
-        adjList[from].push_back(Road(roadId, from, to, length, capacity));
-        adjList[to].push_back(Road(roadId, to, from, length, capacity)); // Bidirectional
+        if (from < 0 || from >= numIntersections || to < 0 || to >= numIntersections)
+        {
+            cout << "Invalid intersection IDs. Please ensure the intersections exist.\n";
+            return;
+        }
+        Road road(roadId, from, to, length, capacity);
+        adjList[from].push_back(road);
+        adjList[to].push_back(Road(roadId, to, from, length, capacity));
+    }
+
+    void removeCarsFromRoad(int from, int to, int cars)
+    {
+        for (auto &road : adjList[from])
+        {
+            if (road.end == to && road.currentCars >= cars)
+            {
+                road.currentCars -= cars;
+                cout << cars << " cars removed from road " << road.id << ".\n";
+                return;
+            }
+        }
+        cout << "Unable to remove cars. Road does not exist or not enough cars.\n";
     }
 
     void toggleSignal(int intersectionId)
@@ -97,90 +226,6 @@ public:
         cout << "Unable to add cars. Road does not exist or capacity exceeded.\n";
     }
 
-    void removeCarsFromRoad(int from, int to, int cars)
-    {
-        for (auto &road : adjList[from])
-        {
-            if (road.end == to && road.currentCars >= cars)
-            {
-                road.currentCars -= cars;
-                cout << cars << " cars removed from road " << road.id << ".\n";
-                return;
-            }
-        }
-        cout << "Unable to remove cars. Road does not exist or not enough cars.\n";
-    }
-
-    void addSignal(int from, int to)
-    {
-        bool found = false;
-        for (auto &road : adjList[from])
-        {
-            if (road.end == to)
-            {
-                road.signalState = "Red"; // Initialize signal state on this road
-                found = true;
-                intersections[from].hasSignal = true; // Marking the intersection as having a signal
-                cout << "Signal added on road from " << from << " to " << to << ".\n";
-            }
-        }
-        if (!found)
-        {
-            cout << "No road found from " << from << " to " << to << ".\n";
-        }
-    }
-
-    void displayNetwork()
-    {
-        cout << "\n--- Traffic Network Status ---\n";
-        for (int i = 0; i < numIntersections; ++i)
-        {
-            bool hasRoads = !adjList[i].empty();
-
-            if (hasRoads)
-            {
-                for (const Road &road : adjList[i])
-                {
-                    cout << "Intersection " << i;
-                    if (intersections[i].hasSignal)
-                        cout << " [Signal: " << intersections[i].signalState << "]\n";
-                    else
-                        cout << " [No Signal]\n";
-
-                    cout << "  -> Road " << road.id << " to Intersection " << road.end
-                         << " (Length: " << road.length << "m, Capacity: " << road.capacity
-                         << ", Current Cars: " << road.currentCars << ")\n";
-                }
-            }
-        }
-    }
-
-    void adjustSignalBasedOnTraffic(int intersectionId)
-    {
-        int totalCars = 0;
-        for (const Road &road : adjList[intersectionId])
-        {
-            totalCars += road.currentCars;
-        }
-
-        // Calculate traffic density as a percentage of capacity
-        double density = (totalCars > 0) ? static_cast<double>(totalCars) / adjList[intersectionId].front().capacity : 0;
-
-        // Adjust signal timing based on traffic density
-        if (density > 0.75)
-        {
-            intersections[intersectionId].signalState = "Green";
-        }
-        else if (density > 0.50)
-        {
-            intersections[intersectionId].signalState = "Yellow";
-        }
-        else
-        {
-            intersections[intersectionId].signalState = "Red";
-        }
-    }
-
     void startAutomaticSignalControl(int intersectionId)
     {
         if (intersectionId >= 0 && intersectionId < numIntersections)
@@ -216,123 +261,125 @@ public:
             cout << "Invalid intersection ID.\n";
         }
     }
+
+    void displayNetwork()
+    {
+        cout << "\n--- Traffic Network Status ---\n";
+        for (int i = 0; i < numIntersections; ++i)
+        {
+            bool hasRoads = !adjList[i].empty();
+
+            if (hasRoads)
+            {
+                for (const Road &road : adjList[i])
+                {
+                    cout << "Intersection " << i;
+                    if (intersections[i].hasSignal)
+                        cout << " [Signal: " << intersections[i].signalState << "]\n";
+                    else
+                        cout << " [No Signal]\n";
+
+                    cout << "  -> Road " << road.id << " to Intersection " << road.end
+                         << " (Length: " << road.length << "m, Capacity: " << road.capacity
+                         << ", Current Cars: " << road.currentCars << ")\n";
+                }
+            }
+        }
+    }
 };
 
-// M E N U
-void showMenu()
+void showMenu(RoadNetwork &network)
 {
-    cout << "\n--- Traffic Management Menu ---\n"
-         << "1. Add Road\n"
-         << "2. Display Road Network\n"
-         << "3. Add Cars to Road\n"
-         << "4. Remove Cars from Road\n"
-         << "5. Add Signal\n"
-         << "6. Toggle Signal\n"
-         << "7. Start Automatic Signal\n"
-         << "8. Stop Automatic Signal\n"
-         << "0. Exit\n"
-         << "Choose an option: ";
+    while (true)
+    {
+        cout << "\n--- Traffic Control System Menu ---\n";
+        cout << "1. Add Road\n";
+        cout << "2. Remove Cars from Road\n";
+        cout << "3. Add Signal\n";
+        cout << "4. Toggle Signal\n";
+        cout << "5. Add Cars to Road\n";
+        cout << "6. Display Network Status\n";
+        cout << "7. Start Automatic Signal\n";
+        cout << "8. Stop Automatic Signal\n";
+        cout << "0. Exit\n";
+        cout << "Choose an option: ";
+
+        int option = getValidatedInt("");
+
+        switch (option)
+        {
+        case 1:
+        {
+            int id = getValidatedInt("Enter road ID: ");
+            int start = getValidatedInt("Enter start intersection ID: ");
+            int end = getValidatedInt("Enter end intersection ID: ");
+            int length = getValidatedInt("Enter road length (m): ");
+            int capacity = getValidatedInt("Enter road capacity: ");
+            network.addRoad(id, start, end, length, capacity);
+            break;
+        }
+        case 2:
+        {
+            int to = getValidatedInt("Enter road start intersection ID: ");
+            int from = getValidatedInt("Enter road end intersection ID: ");
+            int cars = getValidatedInt("Enter number of cars to transfer: ");
+            network.removeCarsFromRoad(from, to, cars);
+            break;
+        }
+        case 3:
+        {
+            int fromID = getValidatedInt("Enter intersection from ID to add a signal: ");
+            int toID = getValidatedInt("Enter intersection end ID to add a signal: ");
+            network.addSignal(fromID, toID);
+            break;
+        }
+        case 4:
+        {
+            int intersectionId = getValidatedInt("Enter intersection ID to toggle the signal: ");
+            network.toggleSignal(intersectionId);
+            break;
+        }
+        case 5:
+        {
+            int from = getValidatedInt("Enter road start intersection ID: ");
+            int to = getValidatedInt("Enter road end intersection ID: ");
+            int cars = getValidatedInt("Enter number of cars to add: ");
+            network.addCarsToRoad(from, to, cars);
+            break;
+        }
+        case 6:
+            network.displayNetwork();
+            break;
+        case 7: // Start Automatic Signal Control
+        {
+            int intersectionId = getValidatedInt("Enter intersection ID to start automatic signal control: ");
+            network.startAutomaticSignalControl(intersectionId);
+            break;
+        }
+        case 8: // Stop Automatic Signal Control
+        {
+            int intersectionId = getValidatedInt("Enter intersection ID to stop automatic signal control: ");
+            network.stopAutomaticSignalControl(intersectionId);
+            break;
+        }
+        case 0: // Exit
+            cout << "Exiting the program...\n";
+            return;
+        default:
+            cout << "Invalid option. Please try again.\n";
+        }
+    }
 }
 
 int main()
 {
     int numIntersections;
-    cout << "Enter the number of intersections in the road network: ";
+    cout << "Enter number of intersections: ";
     cin >> numIntersections;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // clear the input buffer
 
     RoadNetwork network(numIntersections);
-    int choice;
+    showMenu(network);
 
-    while (true)
-    {
-        showMenu();
-        cin >> choice;
-
-        switch (choice)
-        {
-        case 1:
-        {
-            int roadId, from, to, length, capacity;
-            cout << "Enter road ID: ";
-            cin >> roadId;
-            cout << "Enter start intersection: ";
-            cin >> from;
-            cout << "Enter end intersection: ";
-            cin >> to;
-            cout << "Enter road length: ";
-            cin >> length;
-            cout << "Enter road capacity: ";
-            cin >> capacity;
-            network.addRoad(roadId, from, to, length, capacity);
-            break;
-        }
-        case 2:
-            network.displayNetwork();
-            break;
-        case 3:
-        {
-            int from, to, cars;
-            cout << "Enter start intersection: ";
-            cin >> from;
-            cout << "Enter end intersection: ";
-            cin >> to;
-            cout << "Enter cars you want to add: ";
-            cin >> cars;
-            network.addCarsToRoad(from, to, cars);
-            break;
-        }
-        case 4:
-        {
-            int from, to, cars;
-            cout << "Enter start intersection: ";
-            cin >> from;
-            cout << "Enter end intersection: ";
-            cin >> to;
-            cout << "Enter cars you want to remove: ";
-            cin >> cars;
-            network.removeCarsFromRoad(from, to, cars);
-            break;
-        }
-        case 5:
-        {
-            int from, to;
-            cout << "Enter start intersection: ";
-            cin >> from;
-            cout << "Enter end intersection: ";
-            cin >> to;
-            network.addSignal(from, to);
-            break;
-        }
-        case 6:
-        {
-            int intersectionId;
-            cout << "Enter intersection ID to toggle the signal: ";
-            cin >> intersectionId;
-            network.toggleSignal(intersectionId);
-            break;
-        }
-        case 7:
-        {
-            int intersectionId;
-            cout << "Enter intersection ID to start automatic signal control: ";
-            cin >> intersectionId;
-            network.startAutomaticSignalControl(intersectionId);
-            break;
-        }
-        case 8:
-        {
-            int intersectionId;
-            cout << "Enter intersection ID to stop automatic signal control: ";
-            cin >> intersectionId;
-            network.stopAutomaticSignalControl(intersectionId);
-            break;
-        }
-        case 0:
-        {
-            exit(0);
-        }
-        default:
-            cout << "Invalid choice. Try again.\n";
-        }
-    }
+    return 0;
 }
