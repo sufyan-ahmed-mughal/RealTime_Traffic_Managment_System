@@ -133,18 +133,23 @@ public:
     void displayNetwork()
     {
         cout << "\n--- Traffic Network Status ---\n";
-        for (int i = 0; i < numIntersections; i++)
+        for (int i = 0; i < numIntersections; ++i)
         {
-            if (!adjList[i].empty())
+            bool hasRoads = !adjList[i].empty();
+
+            if (hasRoads)
             {
-                cout << "Intersection " << i << "\n";
-                for (auto &road : adjList[i])
+                for (const Road &road : adjList[i])
                 {
-                    cout << "  Road " << road.id << " to intersection " << road.end
-                         << " | Length: " << road.length
-                         << "m | Capacity: " << road.capacity
-                         << " cars | Current cars: " << road.currentCars
-                         << " | Signal: " << road.signalState << "\n";
+                    cout << "Intersection " << i;
+                    if (intersections[i].hasSignal)
+                        cout << " [Signal: " << intersections[i].signalState << "]\n";
+                    else
+                        cout << " [No Signal]\n";
+
+                    cout << "  -> Road " << road.id << " to Intersection " << road.end
+                         << " (Length: " << road.length << "m, Capacity: " << road.capacity
+                         << ", Current Cars: " << road.currentCars << ")\n";
                 }
             }
         }
@@ -225,6 +230,7 @@ void showMenu()
          << "6. Toggle Signal\n"
          << "7. Start Automatic Signal\n"
          << "8. Stop Automatic Signal\n"
+         << "0. Exit\n"
          << "Choose an option: ";
 }
 
@@ -320,6 +326,10 @@ int main()
             cin >> intersectionId;
             network.stopAutomaticSignalControl(intersectionId);
             break;
+        }
+        case 0:
+        {
+            exit(0);
         }
         default:
             cout << "Invalid choice. Try again.\n";
