@@ -157,6 +157,23 @@ public:
             cout << "Invalid intersection ID.\n";
         }
     }
+     void stopAutomaticSignalControl(int intersectionId)
+    {
+        if (intersectionId >= 0 && intersectionId < numIntersections)
+        {
+            if (!automaticSignals[intersectionId])
+            {
+                cout << "Automatic control is already inactive for intersection " << intersectionId << ".\n";
+                return;
+            }
+            automaticSignals[intersectionId] = false;
+            cout << "Automatic signal control stopped for intersection " << intersectionId << ".\n";
+        }
+        else
+        {
+            cout << "Invalid intersection ID.\n";
+        }
+    }
 };
 
 // M E N U
@@ -169,6 +186,7 @@ void showMenu() {
     cout << "5. Add Signal\n";
     cout << "6. Toggle Signal\n";
     cout << "7. Start Automatic Signal\n";
+    cout << "8. Stop Automatic Signal\n";
     cout << "Choose an option: ";
 }
 
@@ -252,8 +270,16 @@ int main() {
             network.startAutomaticSignalControl(intersectionId);
             break;
         }
+        case 8: // Stop Automatic Signal Control
+        {
+            int intersectionId ;
+            cout << "Enter intersection ID to stop automatic signal control: ";
+            cin>>intersectionId;
+            network.stopAutomaticSignalControl(intersectionId);
+            break;
+        }
         default:
             cout << "Invalid choice. Try again.\n";
-    }
+        }
     }
 }
