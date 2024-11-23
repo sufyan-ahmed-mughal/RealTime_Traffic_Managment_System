@@ -5,7 +5,7 @@
 #include <queue>
 #include <Windows.h> // For Sleep function on Windows
 #include <limits>
-#include <algorithm>
+#include <unordered_set>
 
 using namespace std;
 
@@ -74,6 +74,7 @@ public:
     vector<vector<Road>> adjList;
     vector<bool> automaticSignals;
     thread signalThread;
+    unordered_set<int> roadIds; // Set to store road IDs
     bool running;
 
     RoadNetwork(int numIntersections) : numIntersections(numIntersections), running(true)
@@ -97,7 +98,8 @@ public:
         }
     }
 
-    void addSignal(int from, int to){
+    void addSignal(int from, int to)
+    {
         bool found = false;
         for (auto &road : adjList[from])
         {
@@ -106,16 +108,30 @@ public:
                 road.signalState = "Red"; // Initialize signal state on this road
                 found = true;
                 intersections[from].hasSignal = true; // Marking the intersection as having a signal
-                cout << "Signal added on road from " << from << " to " << to << ".\n";
+                cout << "Signal added on road from " << from << " to " << to << " (One-way).\n";
             }
         }
+
+        // If a reverse road exists in case of a two-way road, add a signal to the reverse direction as well
+        for (auto &road : adjList[to])
+        {
+            if (road.end == from)
+            {
+                road.signalState = "Red";
+                found = true;
+                intersections[to].hasSignal = true; // Marking the reverse intersection
+                cout << "Signal added on road from " << to << " to " << from << " (Reverse).\n";
+            }
+        }
+
         if (!found)
         {
-            cout << "No road found from " << from << " to " << to << ".\n";
+            cout << "No road found between " << from << " and " << to << ".\n";
         }
     }
 
-    void adjustSignalBasedOnTraffic(int intersectionId){
+    void adjustSignalBasedOnTraffic(int intersectionId)
+    {
         int totalCars = 0;
         for (const Road &road : adjList[intersectionId])
         {
@@ -140,7 +156,8 @@ public:
         }
     }
 
-    void manageSignals(){
+    void manageSignals()
+    {
         while (running)
         {
             for (int i = 0; i < numIntersections; ++i)
@@ -154,16 +171,59 @@ public:
         }
     }
 
-    void addRoad(int roadId, int from, int to, int length, int capacity)
+    void addRoad(int roadId, int from, int to, int length, int capacity, bool isTwoWay)
     {
         if (from < 0 || from >= numIntersections || to < 0 || to >= numIntersections)
         {
             cout << "Invalid intersection IDs. Please ensure the intersections exist.\n";
             return;
         }
+
+        // Check if road ID already exists
+        if (roadIds.find(roadId) != roadIds.end())
+        {
+            cout << "Duplicate road ID detected. Road ID must be unique.\n";
+            return;
+        }
+
+        // Check if the road between `from` and `to` already exists
+        for (const auto &road : adjList[from])
+        {
+            if (road.end == to)
+            {
+                cout << "Road from Intersection " << from << " to Intersection " << to << " already exists.\n";
+                return;
+            }
+        }
+
+        // For two-way roads, also check the reverse direction
+        if (isTwoWay)
+        {
+            for (const auto &road : adjList[to])
+            {
+                if (road.end == from)
+                {
+                    cout << "Reverse road from Intersection " << to << " to Intersection " << from
+                         << " already exists (Two-way road previously added).\n";
+                    return;
+                }
+            }
+        }
+
+        // Add the road
         Road road(roadId, from, to, length, capacity);
         adjList[from].push_back(road);
-        adjList[to].push_back(Road(roadId, to, from, length, capacity));
+        roadIds.insert(roadId); // Add the road ID to the set
+
+        // Add reverse road only if it's a two-way road
+        if (isTwoWay)
+        {
+            Road reverseRoad(roadId, to, from, length, capacity);
+            adjList[to].push_back(reverseRoad);
+        }
+
+        cout << "Road added from Intersection " << from << " to Intersection " << to;
+        cout << (isTwoWay ? " (Two-way)." : " (One-way).") << "\n";
     }
 
     void removeCarsFromRoad(int from, int to, int cars)
@@ -177,7 +237,7 @@ public:
                 return;
             }
         }
-        cout << "Unable to remove cars. Road does not exist or not enough cars.\n";
+        cout << "Unable to remove cars. Road does not exist in this direction or not enough cars.\n";
     }
 
     void toggleSignal(int intersectionId)
@@ -186,9 +246,11 @@ public:
         {
             if (intersections[intersectionId].hasSignal)
             {
-                intersections[intersectionId].toggleSignal();
-                cout << "Signal at Intersection " << intersectionId << " toggled manually to "
-                     << intersections[intersectionId].signalState << ".\n";
+                for (auto &road : adjList[intersectionId])
+                {
+                    road.signalState = (road.signalState == "Red") ? "Green" : "Red";
+                    cout << "Signal at road " << road.id << " toggled manually to " << road.signalState << ".\n";
+                }
             }
             else
             {
@@ -212,7 +274,7 @@ public:
                 return;
             }
         }
-        cout << "Unable to add cars. Road does not exist or capacity exceeded.\n";
+        cout << "Unable to add cars. Road does not exist in this direction or capacity exceeded.\n";
     }
 
     void startAutomaticSignalControl(int intersectionId)
@@ -270,7 +332,8 @@ public:
 
                     cout << "  -> Road " << road.id << " to Intersection " << road.end
                          << " (Length: " << road.length << "m, Capacity: " << road.capacity
-                         << ", Current Cars: " << road.currentCars << ")\n";
+                         << ", Current Cars: " << road.currentCars << ", Type: "
+                         << (road.signalState == "Red" ? "One-way" : "Two-way") << ")\n";
                 }
             }
         }
@@ -304,9 +367,14 @@ void showMenu(RoadNetwork &network)
             int end = getValidatedInt("Enter end intersection ID: ");
             int length = getValidatedInt("Enter road length (m): ");
             int capacity = getValidatedInt("Enter road capacity: ");
-            network.addRoad(id, start, end, length, capacity);
+            cout << "Is this road two-way? (1 for Yes, 0 for No): ";
+            int isTwoWay;
+            cin >> isTwoWay;
+
+            network.addRoad(id, start, end, length, capacity, isTwoWay == 1);
             break;
         }
+
         case 2:
         {
             int to = getValidatedInt("Enter road start intersection ID: ");
