@@ -233,12 +233,12 @@ public:
                 // Prioritize roads with higher density by giving them more green light time
                 if (road.signalState == "Green")
                 {
-                    cout << "Signal on road from " << road.start << " to " << road.end << " is Green (Density: " << density << ").\n";
+                    
                     return;
                 }
                 else
                 {
-                    cout << "Signal on road from " << road.start << " to " << road.end << " is " << road.signalState << " (Density: " << density << ").\n";
+                    
                     return;
                 }
             }
@@ -363,11 +363,37 @@ void removeCarsFromRoad(int from, int to, int cars)
             cout << "Invalid intersection IDs.\n";
             return;
         }
-        adjList[from].emplace_back(from, to, length, capacity, isOneWay);
+
+        for (const auto &road : adjList[from])
+        {
+            if (road.end == to)
+            {
+                cout << "Road already exists.\n";
+                return;
+            }
+        }
+
         if (!isOneWay)
         {
-            adjList[to].emplace_back(to, from, length, capacity, isOneWay);
+            for (const auto &road : adjList[to])
+            {
+                if (road.end == from)
+                {
+                    cout << "Bidirectional road exists.\n";
+                    return;
+                }
+            }
         }
+
+        Road road(from, to, length, capacity, isOneWay);
+        adjList[from].push_back(road);
+
+        if (!isOneWay)
+        {
+            adjList[to].push_back(Road(to, from, length, capacity, isOneWay));
+        }
+
+        cout << "Road added.\n";
     }
         void printRoads()
     {
